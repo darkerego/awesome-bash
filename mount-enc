@@ -1,0 +1,9 @@
+#!/bin/bash
+# Mounting encrypted luks disk on debian
+echo 'Please unlock the disc...'
+udisksctl unlock -b /dev/sda5
+sudo lvscan
+sudo vgchange -ay
+sudo mount /dev/mapper/disk--vg-home /media/$USER/vm
+[ "$?" -eq "0" ] && echo 'Success!' || (echo 'Fail!';exit 1)
+exit 0
