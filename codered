@@ -1,0 +1,13 @@
+#!/bin/bash
+# shut down remote luks server when getting raided by feds
+sketchy_server=1.2.3.4
+case "$@" in
+-y|--yes)
+echo 'Killing it...'
+ssh $sketchy_server -C 'sudo /sbin/poweroff'
+;;
+*)
+echo 'Use -y to really kill it!'
+;;
+esac
+exit 0
