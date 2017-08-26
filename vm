@@ -1,0 +1,86 @@
+#!/bin/bash
+if [[ ! -f "~/vbox.log" ]] ; then touch ~/vbox.log ; fi
+start(){
+echo "Starting vm $Vm "
+if [[ "$vrde" == "true" ]] ; then
+vboxheadless -s $Vm --vrde on & 2>>~/vbox.log
+else
+vboxheadless -s $Vm &
+fi
+
+}
+
+stop(){
+echo "Forcing shutdown of vm $Vm"
+vboxmanage controlvm $Vm poweroff
+}
+
+powerdown(){
+echo "Gracefully shutting down vm $Vm"
+vboxmanage controlvm $Vm acpipowerbutton
+}
+
+pause(){
+echo "Pausing vm $Vm"
+vboxmanage controlvm $Vm pause
+
+}
+resume(){
+echo "Resuming vm $Vm"
+vboxmanage controlvm $Vm resume
+
+}
+
+reset(){
+echo "Resetting the vm $Vm"
+vboxmanage controlvm $Vm reset
+}
+
+status(){
+echo "Running Virtual Machines:"
+vboxmanage list runningvms
+}
+
+case $1 in 
+-s|--start|-o|--on)
+Vm="$2"
+
+case $Vm in debian)
+vrde=true
+;;
+esac
+
+start $Vm $vrde
+;;
+
+-S|--stop|-O|--off)
+Vm="$2"
+stop $Vm
+;;
+
+
+-P|--poweroff|--acpi)
+Vm="$2"
+powerdown $Vm
+;;
+
+
+-p|--pause)
+Vm="$2"
+pause $Vm
+;;
+
+-r|--resume)
+Vm="$2"
+resume $Vm
+;;
+-R|--reset)
+Vm="$2"
+reset $Vm
+;;
+--stat|stats|--status)
+status
+;;
+esac
+
+exit
