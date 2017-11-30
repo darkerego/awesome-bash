@@ -1,3 +1,12 @@
+if [[ -f . ~/.bash_banner ]] ; then
+. ~/.bash_banner
+echo "$bash_banner"
+fi
+
+
+#echo
+#echo -e "\e[31mToday, I will not WILLINGLY offer my thoughts to the global intelligence machine with questionable motives.\e[0m";echo
+
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -11,7 +20,6 @@ esac
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 HISTCONTROL=ignoreboth
-
 # append to the history file, don't overwrite it
 shopt -s histappend
 
@@ -166,9 +174,9 @@ genpass() {
 
 encrypt(){
   case $1 in
-  -e) echo $2 | openssl enc -base64 -aes-128-cbc -a -salt -pass pass:$3
+  -e) echo "$2" | openssl enc -base64 -aes-128-cbc -a -salt -pass pass:"$3"
   ;;
-  -f) cat $2 | openssl enc -base64 -aes-128-cbc -a -salt -pass pass:$3
+  -f) cat "$2" | openssl enc -base64 -aes-128-cbc -a -salt -pass pass:"$3"
   ;;
   -h|--help) echo "Encrypt a file/string with AES-128-CBC w/ Base64 "
              echo "                   encrypt -e <string> <password>"
@@ -180,9 +188,9 @@ encrypt(){
 
 decrypt(){
   case $1 in
-  -e) echo $2 | openssl enc -d -base64 -aes-128-cbc -a -salt -pass pass:$3
+  -e) echo "$2" | openssl enc -d -base64 -aes-128-cbc -a -salt -pass pass:"$3"
   ;;
-  -f) cat $2 | openssl enc -d -base64 -aes-128-cbc -a -salt -pass pass:$3
+  -f) cat "$2" | openssl enc -d -base64 -aes-128-cbc -a -salt -pass pass:"$3"
   ;;
   -h|--help) echo  "Decrypt a file/string with AES-128-CBC w/ Base64 "
              echo   "                  decrypt -e <string> <password>"
@@ -197,25 +205,6 @@ decrypt(){
 function mkcd() {
   mkdir -p -v $1
   cd $1
-}
-
-function cpserver(){
-
-case $1 in
--w|--web)
-scp $2 "$3"://var/www/html/$1
-;;
--n|--new|-home)
-scp $2 "$3"://home/ghost/new
-;;
--h|--help|*)
-echo -e "USAGE: cpserver -w|-n file server
--w Put in web srv dir. 
--n Put in ~/new.
--h Show this shelp"
-;;
-esac
-
 }
 
 # Creates an archive from given directory
@@ -240,6 +229,7 @@ alias ......="cd ../../../../.."
 #alias home='cd ~/'
 alias docs='cd ~/Documents'
 alias dls='cd ~/Downloads'
+alias downloads='cd ~/Downloads'
 #alias books='cd ~/eBooks'
 #alias images='cd ~/Images'
 #alias packages='cd ~/Packages'
@@ -253,13 +243,7 @@ alias dls='cd ~/Downloads'
 #
 alias bin='cd ~/bin'
 alias ccmips='export PATH=$PATH:$toolchain'
-alias mips-gcc='/home/$USER/Source/cross-compiler-mips/bin/mips-gcc'
-
-make_mips(){
-export PATH=$PATH:/home/$USE/Source/cross-compiler-mips/bin
-make CC=mips-gcc LD=mips-ld RANLIB=mips-ranlib STRIP="mips-strip --strip-all"
-}
-
+alias mips-gcc='/home/$USER/bin/cross-compiler-mips/bin/mips-gcc'
 
 
 weather(){ curl -s "http://api.wunderground.com/auto/wui/geo/ForecastXML/index.xml?query=${@:-<YOURZIPORLOCATION>}"|perl -ne '/<title>([^<]+)/&&printf "%s: ",$1;/<fcttext>([^<]+)/&&print $1,"\n"';}
@@ -297,7 +281,8 @@ curl -s checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//'
 }
 
 proxup(){
-ssh -D 1080 "$@"
+proxy_server='some anonymous vps of yours'
+ssh -fND 8080 proxy_server
 echo "Status: $?"
 }
 
@@ -305,3 +290,45 @@ sprunge(){
 cat "$@" |proxychains curl -F 'sprunge=<-' http://sprunge.us 
 }
 alias spr="curl -F 'sprunge=<-' http://sprunge.us"
+
+stream(){
+
+if [[ ! -d /home/$USER/.webcam ]] ; then
+  mkdir  -d /home/$USER/.webcam 
+fi
+
+secs="$@"
+secs_=$(echo -n "$secs"| grep -oe "[0-9].*")
+
+{ test -n $secs || secs="30" ;}
+echo "Recording for $secs seconds..."
+streamer -q -c /dev/video0 \
+ -f rgb24 \
+-r 3 \
+-t 00:"$secs" \
+-s 352x240 \
+ -o /home/$USER/.webcam/stream-`date +%s`.avi
+}
+
+
+ping8(){
+int=${1:-"4"}
+echo -n "Pinging 8.8.8.8 $int times...\n"
+ping -c $int 8.8.8.8
+}
+
+compst(){
+case "$1" in '-')
+cat /dev/stdin | curl compst.io/static -Fp=\<-
+;;
+*)
+cat "$@" | curl compst.io/static -Fp=\<-
+;;
+esac
+}
+
+getTx(){
+tx="$@"
+which torify >/dev/null 2>&1 || { echo 'Install tor for privacy first and than rereun. Alternatly, edit this function.' ; exit 1 ;}
+torify curl https://api.blockcypher.com/v1/btc/main/txs/"$tx"
+}
